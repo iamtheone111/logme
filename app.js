@@ -9,6 +9,7 @@ var sassMiddleware = require('node-sass-middleware');
 var index = require('./routes/index');
 var users = require('./routes/users');
 var service = require('./routes/service');
+var logger = require('./routes/logger');
 
 var config = require('./config');
 var twilioNotifications = require('./middleware/twilioNotifications');
@@ -36,6 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', index);
 app.use('/users', users);
 app.use('/service', service);
+app.use('/log', logger);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

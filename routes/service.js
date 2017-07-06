@@ -28,6 +28,7 @@ router.post('/send/:to', function(req, res, next) {
 });
 
 router.post('/receive', function(req, res, next) {
+  console.log('Incoming Message');
   console.log(req.body);
 });
 
