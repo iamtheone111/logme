@@ -76,7 +76,7 @@ router.post('/receive', function(req, res, next) {
               };
 
               account = new Account(account_data);
-              result_message = 'Thanks for signing up! I’ll text you every 30 minutes to ask what you’re doing.';
+              result_message = 'Thanks for signing up! I’ll text you every 30 minutes to ask what you’re doing. You can message me anytime and I’ll record your message in the log. Send ‘stop’ to stop receiving reminders.';
             }
 
             account.save()
