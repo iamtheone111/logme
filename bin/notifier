@@ -30,6 +30,8 @@ Account.find({ is_active: true }).exec()
     accounts.forEach((account) => {
       // check for last sent and frequency
 
+      console.log(account);
+
       if (account.last_sent) {
         var today = new Date();
         var last_sent = new Date(account.last_sent);
