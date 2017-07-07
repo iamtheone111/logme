@@ -27,10 +27,9 @@ Account.find({ is_active: true }).exec()
     process.exit();
   })
   .then(accounts => {
+
     accounts.forEach((account) => {
       // check for last sent and frequency
-
-      console.log(account);
 
       if (account.last_sent) {
         var today = new Date();
@@ -52,16 +51,17 @@ Account.find({ is_active: true }).exec()
       }));
 
     });
-  })
-;
 
-Promise.all(promises).then(
-  function(phone_nos) {
-    console.log('Notification sent to following : ' + phone_nos);
-    process.exit();
-  },
-  function(err) {
-    console.error(err);
-    process.exit();
+    Promise.all(promises).then(
+      function(phone_nos) {
+        console.log('Notification sent to following : ' + phone_nos);
+        process.exit();
+      },
+      function(err) {
+        console.error(err);
+        process.exit();
+      })
+    ;
+
   })
 ;
