@@ -4,7 +4,7 @@ var router = express.Router();
 var config = require('../config');
 
 router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+  res.send('Log');
 });
 
 router.post('/send', function(req, res, next) {
