@@ -16,14 +16,16 @@ router.post('/receive', function(req, res, next) {
 
   Account.findOne({ phone: sms.From }).exec()
     .catch(err => {
-      return res.json({ status: 'failure', error: err });
+      // return res.json({ status: 'failure', error: err });
+      return;
     })
     .then(account => {
       const action = functions.getFirstWord(sms.Body).toLowerCase();
 
       if (! account && action != 'start') {
         console.log('Unregistered request from ' + sms.From);
-        return res.json({ status: 'failure', error: 'You are not registered' });
+        // return res.json({ status: 'failure', error: 'You are not registered' });
+        return;
       }
 
       let log_data, log;
@@ -49,10 +51,12 @@ router.post('/receive', function(req, res, next) {
             console.log('Start request on an active account from ' + sms.From);
             api.sendSMS(sms.From, 'The service is already running for your number.', (err, data) => {
               if (err) {
-                return res.json({ status: 'failure', error: err });
+                // return res.json({ status: 'failure', error: err });
+                return;
               }
 
-              return res.json({ status: 'success' });
+              return;
+              // return res.json({ status: 'success' });
             });
           } else {
             let result_message;
@@ -81,7 +85,8 @@ router.post('/receive', function(req, res, next) {
 
             account.save()
               .catch(err => {
-                return res.json({ status: 'failure', error: err });
+                // return res.json({ status: 'failure', error: err });
+                return;
               })
               .then(saved_account => {
                 log_data.account = saved_account._id;
@@ -89,15 +94,18 @@ router.post('/receive', function(req, res, next) {
                 log = new Log(log_data);
                 log.save()
                   .catch(err => {
-                    return res.json({ status: 'failure', error: err });
+                    // return res.json({ status: 'failure', error: err });
+                    return;
                   })
                   .then(saved_log => {
                     api.sendSMS(sms.From, result_message, (err, data) => {
                       if (err) {
-                        return res.json({ status: 'failure', error: err });
+                        // return res.json({ status: 'failure', error: err });
+                        return;
                       }
 
-                      return res.json({ status: 'success' });
+                      // return res.json({ status: 'success' });
+                      return;
                     });
                   })
                 ;
@@ -124,17 +132,20 @@ router.post('/receive', function(req, res, next) {
 
             api.sendSMS(sms.From, 'The service is already paused for your number.', (err, data) => {
               if (err) {
-                return res.json({ status: 'failure', error: err });
+                // return res.json({ status: 'failure', error: err });
+                return;
               }
 
-              return res.json({ status: 'success' });
+              // return res.json({ status: 'success' });
+              return;
             });
           } else {
             account.is_active = false;
 
             account.save()
               .catch(err => {
-                return res.json({ status: 'failure', error: err });
+                // return res.json({ status: 'failure', error: err });
+                return;
               })
               .then(saved_account => {
                 log_data.account = saved_account._id;
@@ -142,15 +153,18 @@ router.post('/receive', function(req, res, next) {
                 log = new Log(log_data);
                 log.save()
                   .catch(err => {
-                    return res.json({ status: 'failure', error: err });
+                    // return res.json({ status: 'failure', error: err });
+                    return;
                   })
                   .then(saved_log => {
                     api.sendSMS(sms.From, 'Ok, I won’t message you again until you text me ‘start’.', (err, data) => {
                       if (err) {
-                        return res.json({ status: 'failure', error: err });
+                        // return res.json({ status: 'failure', error: err });
+                        return;
                       }
 
-                      return res.json({ status: 'success' });
+                      // return res.json({ status: 'success' });
+                      return;
                     });
                   })
                 ;
@@ -175,12 +189,14 @@ router.post('/receive', function(req, res, next) {
           log = new Log(log_data);
           log.save()
             .catch(err => {
-              return res.json({ status: 'failure', error: err });
+              // return res.json({ status: 'failure', error: err });
+              return;
             })
             .then(saved_log => {
               Log.find({ account: account._id, is_command: false, date: functions.getFormattedDate('date') }).exec()
                 .catch(err => {
-                  return res.json({ status: 'failure', error: err });
+                  // return res.json({ status: 'failure', error: err });
+                  return;
                 })
                 .then(logs => {
                   let logs_message = functions.getFormattedDate('week_date') + "\n";
@@ -193,10 +209,12 @@ router.post('/receive', function(req, res, next) {
 
                   api.sendSMS(sms.From, logs_message, (err, data) => {
                     if (err) {
-                      return res.json({ status: 'failure', error: err });
+                      // return res.json({ status: 'failure', error: err });
+                      return;
                     }
 
-                    return res.json({ status: 'success', message: logs_message });
+                    // return res.json({ status: 'success', message: logs_message });
+                    return;
                   });
                 })
               ;
@@ -217,22 +235,26 @@ router.post('/receive', function(req, res, next) {
           log = new Log(log_data);
           log.save()
             .catch(err => {
-              return res.json({ status: 'failure', error: err });
+              // return res.json({ status: 'failure', error: err });
+              return;
             })
             .then(saved_log => {
               api.sendSMS(sms.From, 'Got it.', (err, data) => {
                 if (err) {
-                  return res.json({ status: 'failure', error: err });
+                  // return res.json({ status: 'failure', error: err });
+                  return;
                 }
 
-                return res.json({ status: 'success' });
+                // return res.json({ status: 'success' });
+                return;
               });
             })
           ;
           break;
       }
 
-      return res.json({ status: 'no_action' });
+      // return res.json({ status: 'no_action' });
+      return;
     })
   ;
 });
