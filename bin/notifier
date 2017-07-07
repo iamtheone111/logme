@@ -46,7 +46,16 @@ Account.find({ is_active: true }).exec()
             reject(err);
           }
 
-          resolve(account.phone);
+          account.last_sent = new Date().getTime();
+          account.save()
+            .catch(err => {
+              reject(err);
+            })
+            .then(saved_account => {
+              resolve(saved_account.phone);
+            })
+          ;
+
         });
       }));
 
