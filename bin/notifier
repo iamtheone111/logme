@@ -35,7 +35,7 @@ Account.find({ is_active: true }).exec()
         var last_sent = new Date(account.last_sent);
 
         if ((today.getTime() - last_sent.getTime()) * 1000 * 60 < (account.frequency - 1)) {
-          continue;
+          return;
         }
       }
 
