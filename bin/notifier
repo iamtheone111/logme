@@ -38,7 +38,7 @@ Account.find({ is_active: true }).exec()
       if (account.wake_time) {
         var wake_time = new Date(account.wake_time);
 
-        if (nwo.getTime() < wake_time.getTime()) return;
+        if (now.getTime() < wake_time.getTime()) return;
       }
 
       // from & to check

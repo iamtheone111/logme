@@ -33,6 +33,13 @@ router.post('/receive', function(req, res, next) {
         res.end(twiml.toString());
       }
 
+      // if sleeping, wake up
+      if (account.wake_time) {
+        account.wake_time = 0;
+
+        account.save();
+      }
+
       let log_data, log;
 
       switch (action) {
