@@ -169,7 +169,10 @@ router.post('/receive', function(req, res, next) {
               res.end(twiml.toString());
             })
             .then(saved_log => {
-              Log.find({ account: account._id, is_command: false, date: { $eq: new Date() } }).exec()
+              var today = moment().startOf('day');
+              var tomorrow = moment(today).add(1, 'days');
+
+              Log.find({ account: account._id, is_command: false, createdAt: { $gte: today.toDate(), $lt: tomorrow.toDate() } }).exec()
                 .catch(err => {
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
