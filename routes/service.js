@@ -1,5 +1,5 @@
 const express = require('express');
-const twilio = require('twilio');
+const MessagingResponse = require('twilio').twiml.MessagingResponse;
 const router = express.Router();
 
 const api = require('../helpers/api');
@@ -15,7 +15,7 @@ router.get('/', function(req, res, next) {
 router.post('/receive', function(req, res, next) {
   const sms = req.body;
 
-  const twiml = new twilio.TwimlResponse();
+  const twiml = new MessagingResponse();
 
   Account.findOne({ phone: sms.From }).exec()
     .catch(err => {
