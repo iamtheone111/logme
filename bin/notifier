@@ -35,7 +35,7 @@ Account.find({ is_active: true }).exec()
         var today = new Date();
         var last_sent = new Date(account.last_sent);
 
-        console.log(account.phone + ' : ' + (today.getTime() - last_sent.getTime()) * 1000 * 60);
+        console.log(account.phone + ' : ' + account.last_sent + ' : ' + (today.getTime() - last_sent.getTime()) + ' : ' + (today.getTime() - last_sent.getTime()) * 1000 * 60);
 
         if ((today.getTime() - last_sent.getTime()) * 1000 * 60 < (account.frequency - 1)) {
           return;
