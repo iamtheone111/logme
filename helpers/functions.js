@@ -19,7 +19,7 @@ var getFormattedDate = (type) => {
   weekday[6] = 'Saturday';
 
   var date = today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
-  var time = today.getHours() + ":" + today.getMinutes();
+  var time = ('0' + today.getHours()).slice(-2) + ":" + ('0' + today.getMinutes()).slice(-2);
   var week_date = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear() + ' ' + weekday[today.getDay()];
 
   if (type == 'date') return date;
