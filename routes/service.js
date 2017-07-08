@@ -222,10 +222,6 @@ router.post('/receive', function(req, res, next) {
           ;
           break;
       }
-
-      twiml.message('Invalid request.');
-      res.writeHead(200, {'Content-Type': 'text/xml'});
-      res.end(twiml.toString());
     })
   ;
 });
