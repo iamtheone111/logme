@@ -35,42 +35,30 @@ Account.find({ is_active: true }).exec()
         var today = new Date();
         var last_sent = new Date(account.last_sent);
 
-        console.log(account.phone + ' : ' + account.last_sent + ' : ' + (today.getTime() - last_sent.getTime()) + ' : ' + (today.getTime() - last_sent.getTime()) * 1000 * 60);
-
-        if ((today.getTime() - last_sent.getTime()) * 1000 * 60 < (account.frequency - 1)) {
+        if ((today.getTime() - last_sent.getTime()) / 60000 < (account.frequency - 1)) {
           return;
         }
       }
 
       promises.push(new Promise(function(resolve, reject) {
 
-        account.last_sent = new Date().getTime();
-        account.save()
-          .catch(err => {
-            reject(err);
-          })
-          .then(saved_account => {
-            resolve(saved_account.phone);
-          })
-        ;
-
         // send sms to account
-        // api.sendSMS(account.phone, account.prompt, (err, data) => {
-        //   if (err) {
-        //     reject(err);
-        //   }
+        api.sendSMS(account.phone, account.prompt, (err, data) => {
+          if (err) {
+            reject(err);
+          }
 
-        //   account.last_sent = new Date().getTime();
-        //   account.save()
-        //     .catch(err => {
-        //       reject(err);
-        //     })
-        //     .then(saved_account => {
-        //       resolve(saved_account.phone);
-        //     })
-        //   ;
+          account.last_sent = new Date().getTime();
+          account.save()
+            .catch(err => {
+              reject(err);
+            })
+            .then(saved_account => {
+              resolve(saved_account.phone);
+            })
+          ;
 
-        // });
+        });
 
       }));
 
