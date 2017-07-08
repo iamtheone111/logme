@@ -14,18 +14,21 @@ router.get('/', function(req, res, next) {
 router.post('/receive', function(req, res, next) {
   const sms = req.body;
 
+  const twiml = new twilio.TwimlResponse();
+
   Account.findOne({ phone: sms.From }).exec()
     .catch(err => {
-      // return res.json({ status: 'failure', error: err });
-      return;
+      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.end(twiml.toString());
     })
     .then(account => {
       const action = functions.getFirstWord(sms.Body).toLowerCase();
 
       if (! account && action != 'start') {
         console.log('Unregistered request from ' + sms.From);
-        // return res.json({ status: 'failure', error: 'You are not registered' });
-        return;
+        res.message('You are not registered for the service. To register, please sms `start` to this number.');
+        res.writeHead(200, {'Content-Type': 'text/xml'});
+        res.end(twiml.toString());
       }
 
       let log_data, log;
@@ -49,15 +52,10 @@ router.post('/receive', function(req, res, next) {
             // account is already active
 
             console.log('Start request on an active account from ' + sms.From);
-            api.sendSMS(sms.From, 'The service is already running for your number.', (err, data) => {
-              if (err) {
-                // return res.json({ status: 'failure', error: err });
-                return;
-              }
 
-              return;
-              // return res.json({ status: 'success' });
-            });
+            twiml.message('The service is already running for your number.');
+            res.writeHead(200, {'Content-Type': 'text/xml'});
+            res.end(twiml.toString());
           } else {
             let result_message;
 
@@ -85,8 +83,8 @@ router.post('/receive', function(req, res, next) {
 
             account.save()
               .catch(err => {
-                // return res.json({ status: 'failure', error: err });
-                return;
+                res.writeHead(200, {'Content-Type': 'text/xml'});
+                res.end(twiml.toString());
               })
               .then(saved_account => {
                 log_data.account = saved_account._id;
@@ -94,19 +92,14 @@ router.post('/receive', function(req, res, next) {
                 log = new Log(log_data);
                 log.save()
                   .catch(err => {
-                    // return res.json({ status: 'failure', error: err });
-                    return;
+                    res.writeHead(200, {'Content-Type': 'text/xml'});
+                    res.end(twiml.toString());
                   })
                   .then(saved_log => {
-                    api.sendSMS(sms.From, result_message, (err, data) => {
-                      if (err) {
-                        // return res.json({ status: 'failure', error: err });
-                        return;
-                      }
 
-                      // return res.json({ status: 'success' });
-                      return;
-                    });
+                    twiml.message(result_message);
+                    res.writeHead(200, {'Content-Type': 'text/xml'});
+                    res.end(twiml.toString());
                   })
                 ;
               })
@@ -130,22 +123,16 @@ router.post('/receive', function(req, res, next) {
           if (! account.is_active) {
             // account is already inactive
 
-            api.sendSMS(sms.From, 'The service is already paused for your number.', (err, data) => {
-              if (err) {
-                // return res.json({ status: 'failure', error: err });
-                return;
-              }
-
-              // return res.json({ status: 'success' });
-              return;
-            });
+            twiml.message('The service is already paused for your number.');
+            res.writeHead(200, {'Content-Type': 'text/xml'});
+            res.end(twiml.toString());
           } else {
             account.is_active = false;
 
             account.save()
               .catch(err => {
-                // return res.json({ status: 'failure', error: err });
-                return;
+                res.writeHead(200, {'Content-Type': 'text/xml'});
+                res.end(twiml.toString());
               })
               .then(saved_account => {
                 log_data.account = saved_account._id;
@@ -153,19 +140,13 @@ router.post('/receive', function(req, res, next) {
                 log = new Log(log_data);
                 log.save()
                   .catch(err => {
-                    // return res.json({ status: 'failure', error: err });
-                    return;
+                    res.writeHead(200, {'Content-Type': 'text/xml'});
+                    res.end(twiml.toString());
                   })
                   .then(saved_log => {
-                    api.sendSMS(sms.From, 'Ok, I won’t message you again until you text me ‘start’.', (err, data) => {
-                      if (err) {
-                        // return res.json({ status: 'failure', error: err });
-                        return;
-                      }
-
-                      // return res.json({ status: 'success' });
-                      return;
-                    });
+                    twiml.message('Ok, I won’t message you again until you text me ‘start’.');
+                    res.writeHead(200, {'Content-Type': 'text/xml'});
+                    res.end(twiml.toString());
                   })
                 ;
               })
@@ -189,14 +170,14 @@ router.post('/receive', function(req, res, next) {
           log = new Log(log_data);
           log.save()
             .catch(err => {
-              // return res.json({ status: 'failure', error: err });
-              return;
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
             })
             .then(saved_log => {
               Log.find({ account: account._id, is_command: false, date: functions.getFormattedDate('date') }).exec()
                 .catch(err => {
-                  // return res.json({ status: 'failure', error: err });
-                  return;
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
                 })
                 .then(logs => {
                   let logs_message = functions.getFormattedDate('week_date') + "\n";
@@ -207,15 +188,9 @@ router.post('/receive', function(req, res, next) {
 
                   console.log(logs_message);
 
-                  api.sendSMS(sms.From, logs_message, (err, data) => {
-                    if (err) {
-                      // return res.json({ status: 'failure', error: err });
-                      return;
-                    }
-
-                    // return res.json({ status: 'success', message: logs_message });
-                    return;
-                  });
+                  twiml.message(logs_message);
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
                 })
               ;
             })
@@ -235,26 +210,21 @@ router.post('/receive', function(req, res, next) {
           log = new Log(log_data);
           log.save()
             .catch(err => {
-              // return res.json({ status: 'failure', error: err });
-              return;
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
             })
             .then(saved_log => {
-              api.sendSMS(sms.From, 'Got it.', (err, data) => {
-                if (err) {
-                  // return res.json({ status: 'failure', error: err });
-                  return;
-                }
-
-                // return res.json({ status: 'success' });
-                return;
-              });
+              twiml.message('Got it.');
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
             })
           ;
           break;
       }
 
-      // return res.json({ status: 'no_action' });
-      return;
+      twiml.message('Invalid request.');
+      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.end(twiml.toString());
     })
   ;
 });
