@@ -8,8 +8,9 @@ const accountSchema = new mongoose.Schema({
   zip: String,
 
   prompt: String,
-  first: Date,
-  last: Date,
+  first: Number,
+  last: Number,
+  wake_time: Date,
   frequency: { type: Number, default: 30 },
   is_active: { type: Boolean, default: true},
 

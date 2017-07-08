@@ -1,4 +1,5 @@
 const express = require('express');
+const moment = require('moment');
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.post('/receive', function(req, res, next) {
       res.end(twiml.toString());
     })
     .then(account => {
-      const action = functions.getFirstWord(sms.Body).toLowerCase();
+      const action = functions.getCommand(sms.Body).toLowerCase();
 
       if (! account && action != 'start') {
         console.log('Unregistered request from ' + sms.From);
@@ -40,10 +41,7 @@ router.post('/receive', function(req, res, next) {
 
           log_data = {
             sid: sms.MessageSid,
-
             message: sms.Body,
-            date: functions.getFormattedDate('date'),
-            time: functions.getFormattedDate('time'),
 
             is_command: true,
             command: 'start',
@@ -107,15 +105,13 @@ router.post('/receive', function(req, res, next) {
             ;
           }
           break;
+
         case 'stop':
           // stop scheduler
 
           log_data = {
             sid: sms.MessageSid,
-
             message: sms.Body,
-            date: functions.getFormattedDate('date'),
-            time: functions.getFormattedDate('time'),
 
             is_command: true,
             command: 'stop',
@@ -154,15 +150,13 @@ router.post('/receive', function(req, res, next) {
             ;
           }
           break;
+
         case 'log':
           // return logs
 
           log_data = {
             sid: sms.MessageSid,
-
             message: sms.Body,
-            date: functions.getFormattedDate('date'),
-            time: functions.getFormattedDate('time'),
 
             is_command: true,
             command: 'log',
@@ -175,16 +169,16 @@ router.post('/receive', function(req, res, next) {
               res.end(twiml.toString());
             })
             .then(saved_log => {
-              Log.find({ account: account._id, is_command: false, date: functions.getFormattedDate('date') }).exec()
+              Log.find({ account: account._id, is_command: false, date: { $eq: new Date() } }).exec()
                 .catch(err => {
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
                 })
                 .then(logs => {
-                  let logs_message = functions.getFormattedDate('week_date') + "\n";
+                  let logs_message = moment().format('M/D/YYYY dddd') + "\n";
 
                   logs.forEach((log) => {
-                    logs_message += log.time + ' ' + log.message + "\n";
+                    logs_message += moment(log.createdAt).format('hh:mm A') + ' ' + log.message + "\n";
                   });
 
                   console.log(logs_message);
@@ -196,16 +190,61 @@ router.post('/receive', function(req, res, next) {
               ;
             })
           ;
-
           break;
+
+        case 'sleep':
+          // sleep for set hours
+
+          const sleep_hours = functions.getParameters(sms.Body);
+
+          if (! /^\+?\d+$/.test(sleep_hours)) {
+            twiml.message('Invalid syntax. An example valid command: `sleep 6`');
+            res.writeHead(200, {'Content-Type': 'text/xml'});
+            res.end(twiml.toString());
+          }
+
+          var wake_time = moment().add(parseInt(sleep_hours, 10), 'hour');
+
+          log_data = {
+            sid: sms.MessageSid,
+            message: sms.Body,
+
+            is_command: true,
+            command: 'sleep',
+          };
+
+          account.wake_time = wake_time.toDate();
+
+          account.save()
+            .catch(err => {
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
+            })
+            .then(saved_account => {
+              log_data.account = saved_account._id;
+
+              log = new Log(log_data);
+              log.save()
+                .catch(err => {
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+                .then(saved_log => {
+                  twiml.message('Good night. I won\'t message you until ' + wake_time.calendar() + '.');
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+              ;
+            })
+          ;
+          break;
+
         default:
           log_data = {
             sid: sms.MessageSid,
 
-            account: account._id,
+           account: account._id,
             message: sms.Body,
-            date: functions.getFormattedDate('date'),
-            time: functions.getFormattedDate('time'),
           };
 
           log = new Log(log_data);

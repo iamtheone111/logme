@@ -31,11 +31,26 @@ Account.find({ is_active: true }).exec()
     accounts.forEach((account) => {
       // check for last sent and frequency
 
+      var now = new Date();
+      var hour = now.getHours();
+
+      // sleep check
+      if (account.wake_time) {
+        var wake_time = new Date(account.wake_time);
+
+        if (nwo.getTime() < wake_time.getTime()) return;
+      }
+
+      // from & to check
+      if ((account.from && hour < account.from) || (account.to && hour > account.to)) {
+        return;
+      }
+
+      // last sent check
       if (account.last_sent) {
-        var today = new Date();
         var last_sent = new Date(account.last_sent);
 
-        if ((today.getTime() - last_sent.getTime()) / 60000 < (account.frequency - 1)) {
+        if ((now.getTime() - last_sent.getTime()) / 60000 < (account.frequency - 1)) {
           return;
         }
       }

@@ -5,8 +5,6 @@ const logSchema = new mongoose.Schema({
 
   account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account' },
   message: String,
-  date: String,
-  time: String,
 
   is_command: { type: Boolean, default: false },
   command: { type: String, default: '' },
