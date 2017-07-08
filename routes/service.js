@@ -35,7 +35,7 @@ router.post('/receive', function(req, res, next) {
 
       // if sleeping, wake up
       if (account.wake_time) {
-        account.wake_time = 0;
+        account.wake_time = null;
 
         account.save();
       }
