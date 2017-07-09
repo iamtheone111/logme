@@ -10,11 +10,14 @@ var mongoose = require('mongoose');
 var index = require('./routes/index');
 var service = require('./routes/service');
 var log = require('./routes/log');
+var view = require('./routes/view');
 
 var config = require('./config');
 var twilioNotifications = require('./middleware/twilioNotifications');
 
 var app = express();
+
+app.locals.moment = require('moment');
 
 /**
  * Connect to MongoDB.
@@ -48,6 +51,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', index);
 app.use('/service', service);
 app.use('/log', log);
+app.use('/view', view);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

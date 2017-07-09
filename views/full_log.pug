@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  .container
+    h1 Full Log
+    h3 Phone Number: #{account.phone}
+
+    .row
+      .col-md-12
+        if logs.length
+          each log, i in logs
+            p #{moment(log.createdAt).format('YYYY/M/D') + ' ' + moment(log.createdAt).format('HH:mm') + ' - ' + log.message}
+        else
+          h4 Sorry, there're no logs to display.
