@@ -43,7 +43,7 @@ router.post('/receive', function(req, res, next) {
       let log_data, log;
 
       switch (action) {
-        case 'help':
+        case 'commands':
           // return useful commands
 
           log_data = {
@@ -51,7 +51,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'help',
+            command: 'commands',
           };
 
           log = new Log(log_data);
@@ -61,27 +61,14 @@ router.post('/receive', function(req, res, next) {
               res.end(twiml.toString());
             })
             .then(saved_log => {
-              let command_list = '';
-
-              command_list += 'help - get list of available commands' + "\n";
-              command_list += 'start - start/resume receiving notifications' + "\n";
-              command_list += 'stop - stop receiving notifications' + "\n";
-              command_list += 'log - get today\'s logs' + "\n";
-              command_list += 'sleep N - pause notification for N hours' + "\n";
-              command_list += 'frequency N - receive notifications every N minutes' + "\n";
-              command_list += 'first N - start receiving notifications at N o\'clock every day' + "\n";
-              command_list += 'last N - stop receiving notifications at N o\'clock every day' + "\n";
-              command_list += 'prompt TEXT - set notification message text to TEXT' + "\n";
-              // command_list += '' + "\n";
-
-              twiml.message(command_list);
+              twiml.message(functions.getCommandList());
               res.writeHead(200, {'Content-Type': 'text/xml'});
               res.end(twiml.toString());
             })
           ;
           break;
 
-        case 'start':
+        case 'go':
           // start scheduler - if a new phone number, register
 
           log_data = {
@@ -89,7 +76,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'start',
+            command: 'go',
           };
 
           if (account && account.is_active) {
@@ -97,7 +84,7 @@ router.post('/receive', function(req, res, next) {
 
             console.log('Start request on an active account from ' + sms.From);
 
-            twiml.message('The service is already running for your number.');
+            twiml.message('Ok! I\'ll ping you every ' + account.frequency + ' minutes.');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
           } else {
@@ -122,7 +109,7 @@ router.post('/receive', function(req, res, next) {
               };
 
               account = new Account(account_data);
-              result_message = 'Thanks for signing up! I’ll text you every 30 minutes to ask what you’re doing. You can message me anytime and I’ll record your message in the log. Send ‘stop’ to stop receiving reminders.';
+              result_message = functions.getCommandList();
             }
 
             account.save()
@@ -151,7 +138,7 @@ router.post('/receive', function(req, res, next) {
           }
           break;
 
-        case 'stop':
+        case 'pause':
           // stop scheduler
 
           log_data = {
@@ -159,7 +146,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'stop',
+            command: 'pause',
           };
 
           if (! account.is_active) {
