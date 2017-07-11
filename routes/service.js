@@ -241,6 +241,39 @@ router.post('/receive', function(req, res, next) {
           ;
           break;
 
+        case 'undo':
+          // remove last log
+
+          log_data = {
+            sid: sms.MessageSid,
+            message: sms.Body,
+
+            is_command: true,
+            command: action,
+          };
+
+          log = new Log(log_data);
+          log.save()
+            .catch(err => {
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
+            })
+            .then(saved_log => {
+              Log.findOneAndRemove({ account: account._id, is_command: false }).sort({ createdAt: -1 }).exec()
+                .catch(err => {
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+                .then(removed_log => {
+                  twiml.message('Removed your last log at ' + moment().format('HH:mm') + ' - ' + removed_log.message);
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+              ;
+            })
+          ;
+          break;
+
         case 'sleep':
           // sleep for set hours
 
@@ -492,8 +525,8 @@ router.post('/receive', function(req, res, next) {
           } else {
             log_data = {
               sid: sms.MessageSid,
-
               account: account._id,
+
               message: sms.Body,
             };
           }
