@@ -42,6 +42,8 @@ router.post('/receive', function(req, res, next) {
 
       let log_data, log;
 
+      const parameter = functions.getParameters(sms.Body);
+
       switch (action) {
         case 'commands':
           // return useful commands
@@ -51,7 +53,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'commands',
+            command: action,
           };
 
           log = new Log(log_data);
@@ -76,7 +78,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'resume',
+            command: action,
           };
 
           if (account && account.is_active) {
@@ -146,7 +148,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'pause',
+            command: action,
           };
 
           if (! account.is_active) {
@@ -191,7 +193,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'log',
+            command: action,
           };
 
           log = new Log(log_data);
@@ -204,7 +206,16 @@ router.post('/receive', function(req, res, next) {
               var today = moment().startOf('day');
               var tomorrow = moment(today).add(1, 'days');
 
-              Log.find({ account: account._id, is_command: false, createdAt: { $gte: today.toDate(), $lt: tomorrow.toDate() } }).exec()
+              Log.find({
+                account: account._id,
+                is_command: false,
+                createdAt: {
+                  $gte: today.toDate(),
+                  $lt: tomorrow.toDate()
+                }
+              }).sort({
+                createdAt: 1
+              }).exec()
                 .catch(err => {
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
@@ -213,7 +224,7 @@ router.post('/receive', function(req, res, next) {
                   let logs_message = moment().format('M/D/YYYY dddd') + "\n";
 
                   logs.forEach((log) => {
-                    logs_message += moment(log.createdAt).format('hh:mm A') + ' ' + log.message + "\n";
+                    logs_message += moment(log.createdAt).format('HH:mm') + ' ' + log.message + "\n";
                   });
 
                   logs_message += "\n" + 'To view full log, go to following url :' + "\n";
@@ -233,22 +244,20 @@ router.post('/receive', function(req, res, next) {
         case 'sleep':
           // sleep for set hours
 
-          const sleep_hours = functions.getParameters(sms.Body);
-
-          if (! /^\+?\d+$/.test(sleep_hours)) {
+          if (! /^\+?\d+$/.test(parameter)) {
             twiml.message('Invalid syntax. An example valid command: `sleep 6`');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
           }
 
-          var wake_time = moment().add(parseInt(sleep_hours, 10), 'hour');
+          var wake_time = moment().add(parseInt(parameter, 10), 'hour');
 
           log_data = {
             sid: sms.MessageSid,
             message: sms.Body,
 
             is_command: true,
-            command: 'sleep',
+            command: action,
           };
 
           account.wake_time = wake_time.toDate();
@@ -280,17 +289,15 @@ router.post('/receive', function(req, res, next) {
         case 'first':
           // set first time - time when notification starts every day
 
-          const first_hour = functions.getParameters(sms.Body);
-
-          if (! /^\+?\d+$/.test(first_hour)) {
+          if (! /^\+?\d+$/.test(parameter)) {
             twiml.message('Invalid syntax. An example valid command: `first 8`');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
-          } else if (first_hour >= 24) {
+          } else if (parameter >= 24) {
             twiml.message('When do you really want me to start?');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
-          } else if (first_hour >= account.last) {
+          } else if (parameter >= account.last) {
             twiml.message('You can\'t set first hour after last hour. Current last hour set is ' + account.last);
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
@@ -301,10 +308,10 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'first',
+            command: action,
           };
 
-          account.first = parseInt(first_hour, 10);
+          account.first = parseInt(parameter, 10);
 
           account.save()
             .catch(err => {
@@ -321,7 +328,7 @@ router.post('/receive', function(req, res, next) {
                   res.end(twiml.toString());
                 })
                 .then(saved_log => {
-                  twiml.message('Ok, I\'ll now send notifications from ' + first_hour + ' o\'clock every day.');
+                  twiml.message('Ok, I\'ll now send notifications from ' + parameter + ' o\'clock every day.');
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
                 })
@@ -333,17 +340,15 @@ router.post('/receive', function(req, res, next) {
         case 'last':
           // set last time - time when notification ends every day
 
-          const last_hour = functions.getParameters(sms.Body);
-
-          if (! /^\+?\d+$/.test(last_hour)) {
+          if (! /^\+?\d+$/.test(parameter)) {
             twiml.message('Invalid syntax. An example valid command: `first 8`');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
-          } else if (last_hour > 24) {
+          } else if (parameter > 24) {
             twiml.message('When do you really want me to end?');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
-          } else if (last_hour <= account.first) {
+          } else if (parameter <= account.first) {
             twiml.message('You can\'t set last hour before first hour. Current first hour set is ' + account.first);
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
@@ -354,10 +359,10 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'last',
+            command: action,
           };
 
-          account.last = parseInt(last_hour, 10);
+          account.last = parseInt(parameter, 10);
 
           account.save()
             .catch(err => {
@@ -374,7 +379,7 @@ router.post('/receive', function(req, res, next) {
                   res.end(twiml.toString());
                 })
                 .then(saved_log => {
-                  twiml.message('Ok, I\'ll now send notifications until ' + last_hour + ' o\'clock every day.');
+                  twiml.message('Ok, I\'ll now send notifications until ' + parameter + ' o\'clock every day.');
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
                 })
@@ -386,9 +391,7 @@ router.post('/receive', function(req, res, next) {
         case 'frequency':
           // set notification frequency
 
-          const frequency = functions.getParameters(sms.Body);
-
-          if (! /^\+?\d+$/.test(frequency)) {
+          if (! /^\+?\d+$/.test(parameter)) {
             twiml.message('Invalid syntax. An example valid command: `frequency 30`');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
@@ -399,10 +402,10 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'frequency',
+            command: action,
           };
 
-          account.frequency = parseInt(frequency, 10);
+          account.frequency = parseInt(parameter, 10);
 
           account.save()
             .catch(err => {
@@ -419,7 +422,7 @@ router.post('/receive', function(req, res, next) {
                   res.end(twiml.toString());
                 })
                 .then(saved_log => {
-                  twiml.message('Ok, now I\'ll send you notifications every ' + frequency + ' mins.');
+                  twiml.message('Ok, now I\'ll send you notifications every ' + parameter + ' mins.');
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
                 })
@@ -431,9 +434,7 @@ router.post('/receive', function(req, res, next) {
         case 'prompt':
           // set prompt text
 
-          const prompt_text = functions.getParameters(sms.Body);
-
-          if (! prompt_text.trim()) {
+          if (! parameter.trim()) {
             twiml.message('Please enter text to be used as a prompt');
             res.writeHead(200, {'Content-Type': 'text/xml'});
             res.end(twiml.toString());
@@ -444,10 +445,10 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'prompt',
+            command: action,
           };
 
-          account.prompt = prompt_text;
+          account.prompt = parameter;
 
           account.save()
             .catch(err => {
@@ -464,7 +465,7 @@ router.post('/receive', function(req, res, next) {
                   res.end(twiml.toString());
                 })
                 .then(saved_log => {
-                  twiml.message('Prompt text successfully set to `' + prompt_text + '`!');
+                  twiml.message('Ok, in the future I’ll use this phrase to prompt you: ' + parameter);
                   res.writeHead(200, {'Content-Type': 'text/xml'});
                   res.end(twiml.toString());
                 })
@@ -474,12 +475,28 @@ router.post('/receive', function(req, res, next) {
           break;
 
         default:
-          log_data = {
-            sid: sms.MessageSid,
+          let is_time = /^([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?$/.test(action);
+          let is_range = /^([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?-([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?$/.test(action);
 
-           account: account._id,
-            message: sms.Body,
-          };
+          if (is_time) {
+            log_data = {
+              sid: sms.MessageSid,
+              account: account._id,
+
+              command: 'catchup',
+
+              message: parameter,
+              createdAt: moment(action, 'HH:mm').toDate(),
+            };
+          } else if (is_range) {
+          } else {
+            log_data = {
+              sid: sms.MessageSid,
+
+              account: account._id,
+              message: sms.Body,
+            };
+          }
 
           log = new Log(log_data);
           log.save()
