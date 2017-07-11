@@ -68,7 +68,7 @@ router.post('/receive', function(req, res, next) {
           ;
           break;
 
-        case 'go':
+        case 'resume':
           // start scheduler - if a new phone number, register
 
           log_data = {
@@ -76,7 +76,7 @@ router.post('/receive', function(req, res, next) {
             message: sms.Body,
 
             is_command: true,
-            command: 'go',
+            command: 'resume',
           };
 
           if (account && account.is_active) {
