@@ -1,19 +1,16 @@
-var getCommand = (str) => {
-  let spacePosition = str.indexOf(' ');
+var splitString = (str, separator) => {
+  let separatorPosition = str.indexOf(separator);
 
-  if (spacePosition === -1)
-    return str;
+  if (separatorPosition === -1)
+    return [
+      str,
+      '',
+    ];
   else
-    return str.substr(0, spacePosition);
-};
-
-var getParameters = (str) => {
-  let spacePosition = str.indexOf(' ');
-
-  if (spacePosition === -1)
-    return str;
-  else
-    return str.substr(spacePosition + 1); // get next string without space
+    return [
+      str.substr(0, separatorPosition),
+      str.substr(separatorPosition + separator.length),
+    ];
 };
 
 var getCommandList = () => {
@@ -38,7 +35,6 @@ var getCommandList = () => {
 }
 
 module.exports = {
-  getCommand,
-  getParameters,
+  splitString,
   getCommandList,
 };

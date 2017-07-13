@@ -10,6 +10,7 @@ const accountSchema = new mongoose.Schema({
   prompt: String,
   first: Number,
   last: Number,
+  range: String,
   wake_time: Date,
   frequency: { type: Number, default: 30 },
   is_active: { type: Boolean, default: true},

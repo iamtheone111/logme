@@ -24,7 +24,8 @@ router.post('/receive', function(req, res, next) {
       res.end(twiml.toString());
     })
     .then(account => {
-      const action = functions.getCommand(sms.Body).toLowerCase();
+      const splitBody = functions.splitString(sms.Body, ' ');
+      const action = splitBody[0].toLowerCase();
 
       if (! account && action != 'start') {
         console.log('Unregistered request from ' + sms.From);
@@ -42,7 +43,7 @@ router.post('/receive', function(req, res, next) {
 
       let log_data, log;
 
-      const parameter = functions.getParameters(sms.Body);
+      const parameter = splitBody[1];
 
       switch (action) {
         case 'commands':
@@ -666,6 +667,15 @@ router.post('/receive', function(req, res, next) {
               createdAt: moment(action, 'HH:mm').toDate(),
             };
           } else if (is_range) {
+            log_data = {
+              sid: sms.MessageSid,
+              account: account._id,
+
+              command: 'range',
+              is_command: true,
+
+              message: sms.Body,
+            };
           } else {
             log_data = {
               sid: sms.MessageSid,
@@ -675,6 +685,12 @@ router.post('/receive', function(req, res, next) {
             };
           }
 
+          if ((is_time || is_range) && parameter.trim() == '') {
+            twiml.message('Sorry, please specify what I have to log during these hours.');
+            res.writeHead(200, {'Content-Type': 'text/xml'});
+            res.end(twiml.toString());
+          }
+
           log = new Log(log_data);
           log.save()
             .catch(err => {
@@ -682,9 +698,35 @@ router.post('/receive', function(req, res, next) {
               res.end(twiml.toString());
             })
             .then(saved_log => {
-              twiml.message('Got it.');
-              res.writeHead(200, {'Content-Type': 'text/xml'});
-              res.end(twiml.toString());
+              if (is_range) {
+                // save range in account
+
+                let dashPosition = action.indexOf('-');
+                let range_start_time = moment(action.substr(0, dashPosition), 'HH:mm');
+                let range_end_time = moment(action.substr(dashPosition + 1), 'HH:mm');
+
+                if (range_end_time.isBefore(range_start_time)) {
+                  // end time is tomorrow
+                  range_end_time = moment(range_end_time).add(1, 'days');
+                }
+
+                account.range = moment(range_start_time).format('YYYY-MM-DD HH:mm') + '~' + moment(range_end_time).format('YYYY-MM-DD HH:mm') + '*:*' + parameter;
+                account.save()
+                  .catch(err => {
+                    res.writeHead(200, {'Content-Type': 'text/xml'});
+                    res.end(twiml.toString());
+                  })
+                  .then(saved_account => {
+                    twiml.message('Ok, I will log `' + parameter + '` during ' + action);
+                    res.writeHead(200, {'Content-Type': 'text/xml'});
+                    res.end(twiml.toString());
+                  })
+                ;
+              } else {
+                twiml.message('Got it.');
+                res.writeHead(200, {'Content-Type': 'text/xml'});
+                res.end(twiml.toString());
+              }
             })
           ;
           break;

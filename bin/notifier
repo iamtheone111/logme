@@ -7,6 +7,7 @@ const Account = require('../models/Account');
 const Log = require('../models/Log');
 
 const api = require('../helpers/api');
+const functions = require('../helpers/functions');
 
 if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
   dotenv.config({path: '.env'});
@@ -42,9 +43,9 @@ Account.find({ is_active: true }).exec()
       }
 
       // from & to check
-      if ((account.from && hour < account.from) || (account.to && hour > account.to)) {
-        return;
-      }
+      // if ((account.from && hour < account.from) || (account.to && hour > account.to)) {
+      //   return;
+      // }
 
       // last sent check
       if (account.last_sent) {
@@ -57,23 +58,62 @@ Account.find({ is_active: true }).exec()
 
       promises.push(new Promise(function(resolve, reject) {
 
-        // send sms to account
-        api.sendSMS(account.phone, account.prompt, (err, data) => {
-          if (err) {
-            reject(err);
+        // range check
+        let is_range = false;
+        if (account.range) {
+          const splitStr = functions.splitString(account.range, '*:*');
+          const range = splitStr[0];
+          const message = splitStr[1];
+
+          const splitRange = functions.splitString(range, '~');
+          const range_start = moment(splitRange[0], 'YYYY-MM-DD HH:mm');
+          const range_end = moment(splitRange[1], 'YYYY-MM-DD HH:mm');
+          const now = moment();
+
+          if (range_start.isBefore(now) && now.isBefore(range_end)) {
+            // within range
+            is_range = true;
+
+            // log preset action
+            const log_data = {
+              sid: 'RANGE',
+              account: account._id,
+
+              message: message,
+            };
+
+            let log = new Log(log_data);
+            log.save()
+              .catch(err => {
+                reject(err);
+              })
+              .then(saved_log => {
+                console.log('Successfully logged ' + message + ' for ' + account.phone);
+                resolve('');
+              })
+            ;
           }
+        }
 
-          account.last_sent = new Date().getTime();
-          account.save()
-            .catch(err => {
+        if (! is_range) {
+          // send sms to account if range is not set
+          api.sendSMS(account.phone, account.prompt, (err, data) => {
+            if (err) {
               reject(err);
-            })
-            .then(saved_account => {
-              resolve(saved_account.phone);
-            })
-          ;
+            }
 
-        });
+            account.last_sent = new Date().getTime();
+            account.save()
+              .catch(err => {
+                reject(err);
+              })
+              .then(saved_account => {
+                resolve(saved_account.phone);
+              })
+            ;
+
+          });
+        }
 
       }));
 
