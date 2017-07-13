@@ -507,6 +507,150 @@ router.post('/receive', function(req, res, next) {
           ;
           break;
 
+        case 'today':
+          // combine logs
+
+          log_data = {
+            sid: sms.MessageSid,
+            message: sms.Body,
+
+            is_command: true,
+            command: action,
+          };
+
+          log = new Log(log_data);
+          log.save()
+            .catch(err => {
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
+            })
+            .then(saved_log => {
+              var today = moment().startOf('day');
+              var tomorrow = moment(today).add(1, 'days');
+
+              Log.find({
+                account: account._id,
+                is_command: false,
+                createdAt: {
+                  $gte: today.toDate(),
+                  $lt: tomorrow.toDate()
+                }
+              }).sort({
+                createdAt: 1
+              }).exec()
+                .catch(err => {
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+                .then(logs => {
+                  let logs_message = moment().format('M/D/YYYY dddd') + "\n";
+                  let log_time, combined_logs = {};
+
+                  logs.forEach(log => {
+                    log_time = parseInt(moment(log.createdAt).format('mm')) < 30 ? moment(log.createdAt).format('HH') + ':00' : moment(log.createdAt).format('HH') + ':30' ;
+
+                    if (! combined_logs[log_time]) combined_logs[log_time] = [];
+                    combined_logs[log_time].push(log.message);
+                  });
+
+                  for (let log_interval in combined_logs) {
+                    if (combined_logs.hasOwnProperty(log_interval)) {
+                      logs_message += log_interval + ' ' + combined_logs[log_interval].join() + "\n";
+                    }
+                  }
+
+                  logs_message += "\n" + 'To view full log, go to following url :' + "\n";
+                  logs_message += process.env.SITE_URL + '/view/' + account._id + "\n";
+
+                  console.log(logs_message);
+
+                  twiml.message(logs_message);
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+              ;
+            })
+          ;
+          break;
+
+        case 'week':
+          // combine logs for past week
+
+          log_data = {
+            sid: sms.MessageSid,
+            message: sms.Body,
+
+            is_command: true,
+            command: action,
+          };
+
+          log = new Log(log_data);
+          log.save()
+            .catch(err => {
+              res.writeHead(200, {'Content-Type': 'text/xml'});
+              res.end(twiml.toString());
+            })
+            .then(saved_log => {
+              var today = moment().startOf('day');
+              var lastweek = moment(today).add(-6, 'days');
+              var tomorrow = moment(today).add(1, 'days');
+
+              Log.find({
+                account: account._id,
+                is_command: false,
+                createdAt: {
+                  $gte: lastweek.toDate(),
+                  $lt: tomorrow.toDate()
+                }
+              }).sort({
+                createdAt: 1
+              }).exec()
+                .catch(err => {
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+                .then(logs => {
+                  let logs_message = '', combined_logs = {};
+
+                  logs.forEach(log => {
+                    let log_day = moment(log.createdAt).format('M/D/YYYY dddd');
+                    let log_time = parseInt(moment(log.createdAt).format('mm')) < 30 ? moment(log.createdAt).format('HH') + ':00' : moment(log.createdAt).format('HH') + ':30' ;
+
+                    if (! combined_logs[log_day]) combined_logs[log_day] = {};
+
+                    if (! combined_logs[log_day][log_time]) combined_logs[log_day][log_time] = [];
+
+                    combined_logs[log_day][log_time].push(log.message);
+                  });
+
+                  for (let log_day in combined_logs) {
+                    if (combined_logs.hasOwnProperty(log_day)) {
+                      logs_message += log_day + "\n";
+
+                      for (let log_time in combined_logs[log_day]) {
+                        if (combined_logs[log_day].hasOwnProperty(log_time)) {
+                          logs_message += log_time + ' ' + combined_logs[log_day][log_time].join() + "\n";
+                        }
+                      }
+
+                      logs_message += "\n";
+                    }
+                  }
+
+                  logs_message += 'To view full log, go to following url :' + "\n";
+                  logs_message += process.env.SITE_URL + '/view/' + account._id + "\n";
+
+                  console.log(logs_message);
+
+                  twiml.message(logs_message);
+                  res.writeHead(200, {'Content-Type': 'text/xml'});
+                  res.end(twiml.toString());
+                })
+              ;
+            })
+          ;
+          break;
+
         default:
           let is_time = /^([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?$/.test(action);
           let is_range = /^([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?-([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?$/.test(action);

@@ -28,6 +28,9 @@ var getCommandList = () => {
   // command_list += 'first N - start prompting at N o\'clock every day' + "\n";
   // command_list += 'last N - stop prompting at N o\'clock every day' + "\n";
   command_list += 'prompt TEXT - change the prompt text to TEXT' + "\n";
+  command_list += 'today - combine logs' + "\n";
+  command_list += 'week - combine logs for past week' + "\n";
+
   command_list += "\n" + 'Send feedback to nat@nat.org' + "\n";
   // command_list += '' + "\n";
 
